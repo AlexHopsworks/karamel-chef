@@ -1,0 +1,185 @@
+name: HopsworksVagrantTest
+baremetal:
+    username: vagrant
+
+cookbooks:
+  hopsworks:
+    github: "hopsworksjenkins/hopsworks-chef"
+    branch: "BRANCH"
+
+attrs:
+  install:
+    dir: /srv/hops
+    dev_ssh_keys: true
+    kubernetes: true
+    enterprise:
+      install: true
+      download_url: "https://nexus.hops.works/repository"
+      username: "NEXUS_USER"
+      password: "NEXUS_PW"
+  kube-hops:
+    pki:
+      verify_hopsworks_cert: false
+    master:
+      untaint: true
+  hops:
+    num_replicas: 2
+    tls:
+     enabled: true
+     crl_enabled: true
+     crl_fetcher_class: "org.apache.hadoop.security.ssl.DevRemoteCRLFetcher"
+     crl_fetcher_interval: "5m"
+    rmappsecurity:
+     actor_class: "org.apache.hadoop.yarn.server.resourcemanager.security.DevHopsworksRMAppSecurityActions"
+     x509:
+       expiration_safety_period: "30m"
+    encrypt_data_transfer:
+     enabled: true
+    xattrs:
+      max-xattrs-per-inode: 127
+      max-xattr-size: 3442755
+    yarn:
+      cgroups_strict_resource_usage: "true"
+    docker:
+      cgroup:
+        enabled: true
+  hopsworks:
+    enable_read_only_git_repositories: false
+    featurestore_online: true
+    encryption_password: "verysecurepassword"
+    application_certificate_validity_period: "45m"
+    hopsworks_rest_log_level: "DEV"
+    jwt:
+     lifetime_ms: '43200000'
+    hive2:
+      scratch_dir_delay: "30s"
+      scratch_dir_cleaner_interval: "10s"
+    job:
+      executions_cleaner_interval_ms: "5000"
+    docker:
+      cgroup_monitor_interval: "2m"
+  ndb:
+    DataMemory: '1024'
+    configuration:
+      profile: "tiny"
+  jupyter:
+    shutdown_timer_interval: "1m"
+  alertmanager:
+    email:
+      to: sre@logicalclocks.com
+      from: hopsworks@logicalclocks.com
+      smtp_host: mail.hello.com
+  prometheus:
+    retention_time: "2h"
+  elastic:
+    opensearch_security:
+      jwt:
+        exp_ms: "1800000"
+      audit:
+        enable_rest: "true"
+        enable_transport: "false"
+
+groups:
+  namenodes:
+    size: 1
+    baremetal:
+      ip: 192.168.56.101
+    attrs:
+      hops:
+        yarn:
+          memory_mbs: 30000
+          vcores: 5
+    recipes:
+      - kagent
+      - conda
+      - ndb::mgmd
+      - ndb::mysqld
+      - hops::ndb
+      - hops::rm
+      - hops::nn
+      - hops::jhs
+      - hops::docker_registry
+      - hadoop_spark::yarn
+      - hadoop_spark::historyserver
+      - flink::yarn
+      - flink::historyserver
+      - hopsworks
+      - hopsworks::migrate
+      - hopsmonitor
+      - tensorflow
+      - hopslog
+      - hopslog::_filebeat-services
+      - hopsmonitor::prometheus
+      - hopsmonitor::alertmanager
+      - hopsmonitor::node_exporter
+      - kzookeeper
+      - livy
+      - hive2
+      - hops_airflow
+      - elastic
+      - kube-hops::hopsworks
+      - kube-hops::ca
+      - kube-hops::master
+      - kube-hops::addons
+      - consul::master
+  datanode1:
+    size: 1
+    baremetal:
+      ip: 192.168.56.102
+    attrs:
+      hops:
+        yarn:
+          memory_mbs: 30000
+          vcores: 5
+    recipes:
+      - kagent
+      - conda
+      - ndb::ndbd
+      - ndb::mysqld
+      - hops::ndb
+      - hops::nn
+      - hops::dn
+      - hops::nm
+      - kzookeeper
+      - kkafka
+      - livy::install
+      - epipe
+      - hadoop_spark::yarn
+      - flink::yarn
+      - hopslog::_filebeat-spark
+      - hopslog::_filebeat-services
+      - tensorflow
+      - hopsmonitor::node_exporter
+      - elastic
+      - kube-hops::node
+      - consul::slave
+      - onlinefs
+  datanode2:
+    size: 1
+    baremetal:
+      ip: 192.168.56.103
+    attrs:
+      hops:
+        yarn:
+          memory_mbs: 30000
+          vcores: 5
+    recipes:
+      - kagent
+      - conda
+      - ndb::ndbd
+      - ndb::mysqld
+      - kzookeeper
+      - elastic
+      - hops::dn
+      - hops::nm
+      - kkafka
+      - livy::install
+      - hadoop_spark::yarn
+      - flink::yarn
+      - hopslog::_filebeat-spark
+      - hopslog::_filebeat-services
+      - tensorflow
+      - hopsmonitor::node_exporter
+      - kube-hops::node
+      - consul::slave
+      - onlinefs

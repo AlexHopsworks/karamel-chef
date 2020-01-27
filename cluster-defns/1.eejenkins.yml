@@ -1,0 +1,130 @@
+name: HopsworksVagrantTest
+baremetal:
+    username: vagrant
+
+cookbooks:
+  hopsworks:
+    github: logicalclocks/hopsworks-chef
+    branch: master
+
+attrs:
+  kube-hops:
+    pki:
+      verify_hopsworks_cert: false
+    master:
+      untaint: true
+  install:
+    dir: /srv/hops
+    dev_ssh_keys: true
+    kubernetes: true
+    enterprise:
+      install: true
+      download_url: "https://nexus.hops.works/repository"
+      username: ""
+      password: ""
+  hops:
+    num_replicas: 1
+    tls:
+     enabled: true
+     crl_enabled: true
+     crl_fetcher_class: "org.apache.hadoop.security.ssl.DevRemoteCRLFetcher"
+     crl_fetcher_interval: "5m"
+    rmappsecurity:
+     actor_class: "org.apache.hadoop.yarn.server.resourcemanager.security.DevHopsworksRMAppSecurityActions"
+     x509:
+       expiration_safety_period: "30m"
+    encrypt_data_transfer:
+     enabled: true
+    xattrs:
+      max-xattrs-per-inode: 127
+      max-xattr-size: 3442755
+    yarn:
+      cgroups_strict_resource_usage: true
+      detect-hardware-capabilities: false
+      vcores: 4
+      memory_mbs: 24000
+    docker:
+      cgroup:
+        enabled: true
+  alertmanager:
+    email:
+      to: sre@logicalclocks.com
+      from: hopsworks@logicalclocks.com
+      smtp_host: mail.hello.com
+  prometheus:
+    retention_time: "2h"
+  hopsworks:
+    debug: true
+    enable_read_only_git_repositories: false
+    featurestore_online: true
+    encryption_password: "verysecurepassword"
+    application_certificate_validity_period: "45m"
+    hopsworks_rest_log_level: "DEV"
+    jwt:
+     lifetime_ms: '43200000'
+    hive2:
+      scratch_dir_delay: "30s"
+      scratch_dir_cleaner_interval: "10s"
+    job:
+      executions_cleaner_interval_ms: "5000"
+    docker:
+      cgroup_monitor_interval: "2m"
+  elastic:
+    opensearch_security:
+      jwt:
+        exp_ms: "1800000"
+      audit:
+        enable_rest: "true"
+        enable_transport: "false"
+  ndb:
+    DataMemory: '1024'
+    configuration:
+      profile: "tiny"
+  jupyter:
+    shutdown_timer_interval: "1m"
+
+groups:
+  namenodes:
+    size: 1
+    baremetal:
+      ip: 10.0.2.15
+    recipes:
+      - conda
+      - consul::master
+      - elastic
+      - epipe
+      - flink::yarn
+      - flink::historyserver
+      - hadoop_spark::yarn
+      - hadoop_spark::historyserver
+      - hive2
+      - hops::docker_registry
+      - hops::dn
+      - hops::jhs
+      - hops::ndb
+      - hops::nm
+      - hops::nn
+      - hops::rm
+      - hopsmonitor
+      - hopsmonitor::alertmanager
+      - hopsmonitor::node_exporter
+      - hopsmonitor::prometheus
+      - hopslog
+      - hopslog::_filebeat-spark
+      - hopslog::_filebeat-services
+      - hops_airflow
+      - hopsworks
+      #- hopsworks::migrate
+      - kagent
+      - kube-hops::addons
+      - kube-hops::ca
+      - kube-hops::hopsworks
+      - kube-hops::master
+      - kzookeeper
+      - kkafka
+      - livy
+      - ndb::mgmd
+      - ndb::ndbd
+      - ndb::mysqld
+      - onlinefs
+      - tensorflow

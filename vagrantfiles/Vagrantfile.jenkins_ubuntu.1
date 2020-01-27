@@ -1,21 +1,22 @@
+
 Vagrant.configure("2") do |config|
+    disk_partition = <<-SCRIPT
+        growpart /dev/sda 3
+        pvresize /dev/sda3
+        lvresize /dev/ubuntu-vg/ubuntu-lv  -l 100%VG
+        resize2fs /dev/ubuntu-vg/ubuntu-lv
+    SCRIPT
 
-   common = <<-SCRIPT
-          sudo sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
-          sudo sed -i 's|#baseurl=http://mirror.centos.org/$contentdir/$stream|baseurl=http://mirror.centos.org/centos/8-stream|g' /etc/yum.repos.d/CentOS-*
-          sudo sed -i 's|baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
-          sudo dnf clean all
-          sudo dnf install epel-release epel-next-release -y
-          sudo yum -y update ca-certificates
-          sudo dnf install lvm2 -y
-          echo -e "resizepart\n2\nYes\n100%\nprint\nquit" | sudo parted /dev/sda ---pretend-input-tty
-          sudo xfs_growfs /
-   SCRIPT
-   config.disksize.size = "100GB"
+    install_kernel = <<-SCRIPT
+        apt update
+        apt install -y linux-image-5.15.0-72-generic
+    SCRIPT
 
-   config.ssh.insert_key = false
-   config.vm.box = "bento/centos-stream-8"
-   config.vm.hostname = 'hopsworks0.logicalclocks.com'
+    config.disksize.size = "130GB"
+    config.ssh.insert_key = false
+    config.vm.box = "bento/ubuntu-22.04"
+    config.vm.hostname = 'hopsworks0.logicalclocks.com'
+    config.vm.boot_timeout =3600
 
     config.vm.network :forwarded_port, guest: 22, host: 10022, id: "ssh"
     # MySQL Server
@@ -38,35 +39,20 @@ Vagrant.configure("2") do |config|
     config.vm.network(:forwarded_port, {:guest=>3000, :host=>3000})
     # Nodemanager
     config.vm.network(:forwarded_port, {:guest=>8083, :host=>8083})
-    # Influx DB admin (because of clash with nodemanager)
-    config.vm.network(:forwarded_port, {:guest=>8084, :host=>8084})
-    # Influx DB REST API
-    config.vm.network(:forwarded_port, {:guest=>8086, :host=>8086})
-    # Graphite Endpoint
-    config.vm.network(:forwarded_port, {:guest=>2003, :host=>2003})
-    # Jupyter
-    config.vm.network(:forwarded_port, {:guest=>8888, :host=>8888})
+    # prometheus
+    config.vm.network(:forwarded_port, {:guest=>9089, :host=>9089})
+    # membrane proxy
+    config.vm.network(:forwarded_port, {:guest=>11112, :host=>11112})
+    # airflow
+    config.vm.network(:forwarded_port, {:guest=>12358, :host=>12358})
     # rstudio
     config.vm.network(:forwarded_port, {:guest=>8787, :host=>8787})
     # zookeeper
     config.vm.network(:forwarded_port, {:guest=>2181, :host=>2181})
     # kafka
     config.vm.network(:forwarded_port, {:guest=>9092, :host=>9092})
-    # sqoop
-    config.vm.network(:forwarded_port, {:guest=>16000, :host=>16000})
-    # cvat
-    config.vm.network(:forwarded_port, {:guest=>8000, :host=>8000})
     # flyingduck
     config.vm.network(:forwarded_port, {:guest=>5005, :host=>5005})
-    # Istio (http)
-    config.vm.network(:forwarded_port, {:guest=>32080, :host=>32080})
-    # Kafka
-    config.vm.network(:forwarded_port, {:guest=>9085, :host=>9085})
-    # Opensearch
-    config.vm.network(:forwarded_port, {:guest=>9200, :host=>9200})
-    # RonDB Rest Server
-    config.vm.network(:forwarded_port, {:guest=>4406, :host=>4406})
-
 
     config.vm.provision "file", source: ".deploy.sh", destination: "deploy-ear.sh"
     config.vm.provision "file", source: "cluster.yml", destination: "cluster.yml"
@@ -75,22 +61,24 @@ Vagrant.configure("2") do |config|
 
     config.vm.provider :virtualbox do |v|
       v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
-      v.customize ["modifyvm", :id, "--memory", 45000]
+      v.customize ["modifyvm", :id, "--memory", 65000]
       v.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
       v.customize ["modifyvm", :id, "--nictype1", "virtio"]
-      v.customize ["modifyvm", :id, "--name", "config"]
-      v.customize ["modifyvm", :id, "--cpus", "8"]
+      v.customize ["modifyvm", :id, "--name", "hopsworks0"]
+      v.customize ["modifyvm", :id, "--cpus", "12"]
     end
 
-    config.vm.provision :shell, :inline => common
+    config.vm.provision :shell, :inline => install_kernel
+    config.vm.provision :reload
+    config.vm.provision :shell, :inline => disk_partition
     config.vm.provision :chef_solo do |chef|
         chef.version = "14.10.9"
         chef.cookbooks_path = "cookbooks"
         chef.json = {
           "karamel" => {
-	            "default" =>      {
+              "default" =>      {
                   "private_ips" => ["10.0.2.15"]
-	            },
+              },
               "hostname" => "hopsworks0.logicalclocks.com",
           },
         }
@@ -98,5 +86,5 @@ Vagrant.configure("2") do |config|
         chef.add_recipe "karamel::default"
         chef.add_recipe "karamel::run"
     end
-end
 
+end
