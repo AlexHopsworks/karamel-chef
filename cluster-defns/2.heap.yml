@@ -20,8 +20,6 @@ attrs:
     master:
       untaint: true
   hops:
-    dn:
-      data_dir: "file:///mnt/disk1/hopsfs-data"
     num_replicas: 1
     tls:
      enabled: true
@@ -38,6 +36,8 @@ attrs:
       max-xattrs-per-inode: 127
       max-xattr-size: 3442755
     yarn:
+      vcores: 2
+      memory_mbs: 7168
       cgroups_strict_resource_usage: "true"
   prometheus:
     retention_time: "2h"
