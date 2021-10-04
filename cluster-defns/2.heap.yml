@@ -48,6 +48,10 @@ attrs:
     kagent_liveness:
      enabled: true
      threshold: "10s"
+    hdfs:
+      storage_policy:
+        base: HOT
+        log: HOT
     jwt:
      lifetime_ms: '43200000'
     hive2:
