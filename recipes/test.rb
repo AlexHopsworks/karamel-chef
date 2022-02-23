@@ -165,38 +165,6 @@ when 'ubuntu'
     end
   end
 
-  # Run Selenium tests
-  bash 'selenium-firefox' do
-    user 'root'
-    ignore_failure true
-    cwd node['test']['hopsworks']['base_dir']
-    environment ({'HOPSWORKS_URL' => 'https://localhost:8181/hopsworks',
-                  'HEADLESS' => "true",
-                  'DB_HOST' => "127.0.0.1",
-                  'BROWSER' => "firefox"})
-    code <<-FIREFOX
-      mvn clean install -P-web,mysql -Dmaven.test.failure.ignore=true
-      cd hopsworks-IT/target/failsafe-reports
-      for file in *.xml ; do cp $file #{node['test']['hopsworks']['report_dir']}/firefox-${file} ; done
-    FIREFOX
-    only_if { node['test']['hopsworks']['frontend'] }
-  end
-
-  bash 'selenium-chrome' do
-    user 'root'
-    ignore_failure true
-    cwd node['test']['hopsworks']['base_dir']
-    environment ({'HOPSWORKS_URL' => 'https://localhost:8181/hopsworks',
-                  'HEADLESS' => "true",
-                  'DB_HOST' => "127.0.0.1",
-                  'BROWSER' => "chrome"})
-    code <<-CHROME
-      mvn clean install -P-web,mysql -Dmaven.test.failure.ignore=true
-      cd hopsworks-IT/target/failsafe-reports
-      for file in *.xml ; do cp $file #{node['test']['hopsworks']['report_dir']}/chrome-${file} ; done
-    CHROME
-    only_if { node['test']['hopsworks']['frontend'] }
-  end
 
 when 'centos'
   bash "dependencies_tests" do

@@ -21,11 +21,11 @@ directory '/tmp/chef-solo' do
 end
 
 #EE default flags
-ubuntu_build_flags = "-Pjupyter-git,testing,web"
+ubuntu_build_flags = "-Pjupyter-git,testing,noSeleniumTest"
 centos_build_flags = "-Pkube,jupyter-git,noSeleniumTest,testing"
 if node['build']['test']['community']
-  centos_build_flags = "-Pweb,testing,noSeleniumTest"
-  ubuntu_build_flags = "-Pweb,testing"
+  centos_build_flags = "-Ptesting,noSeleniumTest"
+  ubuntu_build_flags = "-Ptesting,noSeleniumTest"
 end
 
 case node['platform_family']
@@ -72,7 +72,6 @@ when "debian"
       VERSION=$(mvn -q -Dexec.executable="echo" -Dexec.args='${project.version}' --non-recursive exec:exec)
       mv hopsworks-ear/target/hopsworks-ear.ear /tmp/chef-solo/hopsworks-ear\:$VERSION-$VERSION.ear
       mv hopsworks-ca/target/hopsworks-ca.war /tmp/chef-solo/hopsworks-ca\:$VERSION-$VERSION.war
-      mv hopsworks-web/target/hopsworks-web.war /tmp/chef-solo/hopsworks-web\:$VERSION-$VERSION.war
     EOF
   end
 
