@@ -4,8 +4,8 @@ baremetal:
 
 cookbooks:
   hopsworks:
-    github: logicalclocks/hopsworks-chef
-    branch: master
+    github: AlexHopsworks/hopsworks-chef
+    branch: HWORKS-545
 
 attrs:
   kube-hops:
@@ -16,15 +16,15 @@ attrs:
       untaint: true
   install:
     # When upgrading, set current_version and re-run karamel
-    #current_version: 2.5.0
+    current_version: 3.3.0
     dir: /srv/hops
     cloud: gcp
     kubernetes: true
     enterprise:
       install: true
-      download_url: 
-      username: 
-      password: 
+      download_url: "https://nexus.hops.works/repository"
+      username: "alex"
+      password: "Kthfs2020@Hopsworks2020" 
   hops:
     rmappsecurity:
       actor_class: "org.apache.hadoop.yarn.server.resourcemanager.security.DevHopsworksRMAppSecurityActions"
@@ -40,7 +40,7 @@ attrs:
     retention_time: "2h"
   hopsworks:
     debug: true
-    #download_url: 
+    expat_url: https://repo.hops.works/dev/alex/expat-3.4.0-SNAPSHOT.tar.gz
     #ear_url: 
     featurestore_online: true
     enable_flyingduck: true
@@ -96,7 +96,7 @@ groups:
       - hopsmonitor::node_exporter
       - hopsworks
       # when upgrading, enable this recipe
-      #- hopsworks::migrate
+      - hopsworks::migrate
       - kagent
       - kube-hops::addons
       - kube-hops::ca
