@@ -77,9 +77,9 @@ attrs:
         enable_rest: "true"
         enable_transport: "false"
   ndb:
-    DataMemory: '1024'
-    configuration:
-      profile: "tiny"
+    LockPagesInMainMemory: 0
+    TotalMemoryConfig: 5G
+    NumCPUs: 4
   jupyter:
     shutdown_timer_interval: "1m"
 
